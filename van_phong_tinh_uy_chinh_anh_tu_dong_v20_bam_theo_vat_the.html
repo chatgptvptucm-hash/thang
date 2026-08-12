@@ -1,0 +1,2198 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VĂN PHÒNG TỈNH ỦY CHỈNH ẢNH TỰ ĐỘNG</title>
+<style>
+  :root{
+    --bg:#f3f5f7; --panel:#fff; --text:#18212f; --muted:#6b7280;
+    --line:#e5e7eb; --accent:#2563eb; --accent2:#1d4ed8; --success:#166534;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:18px 24px;background:#b91c1c;color:white;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+  header h1{font-size:20px;margin:0}
+  header span{font-size:13px;color:#cbd5e1}
+  main{padding:18px;max-width:1500px;margin:0 auto}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  button,.file-label{
+    border:0;border-radius:10px;padding:10px 14px;font-weight:650;cursor:pointer;
+    background:#e5e7eb;color:#111827; transition:.15s ease;
+  }
+  button:hover,.file-label:hover{transform:translateY(-1px)}
+  .primary{background:var(--accent);color:white}
+  .primary:hover{background:var(--accent2)}
+  .active-tool{background:#0f766e;color:#fff}
+  input[type=file]{display:none}
+  .grid{display:grid;grid-template-columns:1fr 360px 1fr;gap:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:540px}
+  .panel h2{font-size:15px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line);background:#fafafa}
+  .stage{height:500px;display:flex;align-items:center;justify-content:center;padding:16px;position:relative;background:
+    linear-gradient(45deg,#f6f6f6 25%,transparent 25%),linear-gradient(-45deg,#f6f6f6 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#f6f6f6 75%),linear-gradient(-45deg,transparent 75%,#f6f6f6 75%);
+    background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+  canvas{max-width:100%;max-height:100%;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+  #editedCanvas{cursor:crosshair}
+  .selection-box{position:absolute;border:2px dashed #2563eb;background:rgba(37,99,235,.10);pointer-events:none;display:none;z-index:5}
+  .object-box{position:absolute;border:2px dashed #f59e0b;background:rgba(245,158,11,.12);pointer-events:none;display:none;z-index:6}
+  .tilt-object-box{position:absolute;border:2px dashed #7c3aed;background:rgba(124,58,237,.12);pointer-events:none;display:none;z-index:7}
+  .controls{padding:14px 16px;overflow:auto;max-height:500px}
+  .control{margin:0 0 15px}
+  .control-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  input[type=range]{width:100%}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5}
+  .empty{color:#9ca3af;text-align:center;font-size:14px;max-width:260px;line-height:1.5}
+  .section-note{padding:10px 12px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;margin:8px 0 14px}
+  .size-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .size-grid label{font-size:12px;color:#475569;display:block;margin-bottom:4px}
+  .size-grid input[type=number]{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#111827}
+  .check-row{display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0}
+  .status{display:none;margin-top:8px;font-size:12px;font-weight:700;color:var(--success);text-align:center}
+  footer{font-size:12px;color:#6b7280;text-align:center;padding:14px}
+  @media(max-width:1100px){
+    .grid{grid-template-columns:1fr}
+    .panel{min-height:auto}
+    .stage{height:420px}
+    .controls{max-height:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div></div>
+  <div style="text-align:center"><h1>VĂN PHÒNG TỈNH ỦY CHỈNH ẢNH TỰ ĐỘNG</h1><span>Bạn muốn đẹp hãy để tôi!</span></div>
+  <span style="justify-self:end">Tác giả cu Thắng</span>
+</header>
+
+<main>
+  <div class="toolbar">
+    <label class="file-label" for="fileInput">📷 Chọn ảnh</label>
+    <input id="fileInput" type="file" accept="image/*"/>
+    <button id="autoBtn" class="primary">✨ Tự động tối ưu</button>
+    <button id="removeBgBtn">🪄 Xóa nền</button>
+    <button id="resetBtn">↶ Khôi phục</button>
+    <button id="rotateL">⟲ Xoay trái</button>
+    <button id="rotateR">⟳ Xoay phải</button>
+    <button id="downloadBtn">⬇ Xuất JPG</button>
+    <button id="downloadPngBtn">⬇ Xuất PNG</button>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>1. Ảnh gốc</h2>
+      <div class="stage" id="originalStage">
+        <div class="empty">Chọn một ảnh để bắt đầu chỉnh sửa.</div>
+        <canvas id="originalCanvas" hidden></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Công cụ chỉnh sửa</h2>
+      <div class="controls">
+        <div class="control">
+          <div class="control-row"><b>Độ sáng</b><span id="brightnessVal">100%</span></div>
+          <input id="brightness" type="range" min="50" max="160" value="100"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Tương phản</b><span id="contrastVal">100%</span></div>
+          <input id="contrast" type="range" min="50" max="180" value="100"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Bão hòa màu</b><span id="saturateVal">100%</span></div>
+          <input id="saturate" type="range" min="0" max="200" value="100"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Độ ấm</b><span id="warmthVal">0</span></div>
+          <input id="warmth" type="range" min="-40" max="40" value="0"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Độ nét</b><span id="sharpnessVal">0</span></div>
+          <input id="sharpness" type="range" min="0" max="3" step="0.1" value="0"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Đen trắng</b><span id="grayscaleVal">0%</span></div>
+          <input id="grayscale" type="range" min="0" max="100" value="0"/>
+        </div>
+        <div class="control">
+          <div class="control-row"><b>Làm mờ</b><span id="blurVal">0px</span></div>
+          <input id="blur" type="range" min="0" max="8" step="0.2" value="0"/>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Chỉnh nghiêng ảnh</div>
+          <div class="control" style="margin-bottom:8px">
+            <div class="control-row"><b>Góc nghiêng</b><span id="tiltAngleVal">0°</span></div>
+            <input id="tiltAngle" type="range" min="-45" max="45" step="1" value="0"/>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 90px;gap:6px;margin-bottom:8px">
+            <button id="tiltMinusBtn">−1°</button>
+            <button id="tiltZeroBtn">0°</button>
+            <button id="tiltPlusBtn">+1°</button>
+            <input id="tiltNumber" type="number" min="-45" max="45" step="1" value="0"
+                   style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"/>
+          </div>
+          <div class="hint">Kéo thanh hoặc nhập trực tiếp góc từ -45° đến +45°. Ảnh bên phải sẽ nghiêng ngay khi thay đổi.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Nghiêng vật thể</div>
+          <button id="selectTiltObjectBtn" style="width:100%;margin-bottom:8px">🔲 Chọn vật thể để nghiêng</button>
+
+          <label class="check-row" style="margin:8px 0">
+            <input id="snapTiltObject" type="checkbox" checked/>
+            <span>Tự bám theo vật thể trong vùng chọn</span>
+          </label>
+
+          <div class="control" style="margin-bottom:8px">
+            <div class="control-row"><b>Độ bám vật thể</b><span id="snapToleranceVal">38</span></div>
+            <input id="snapTolerance" type="range" min="15" max="90" step="1" value="38"/>
+          </div>
+
+          <div class="control" style="margin-bottom:8px">
+            <div class="control-row"><b>Góc nghiêng vật thể</b><span id="objectTiltAngleVal">0°</span></div>
+            <input id="objectTiltAngle" type="range" min="-45" max="45" step="1" value="0"/>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 90px;gap:6px;margin-bottom:8px">
+            <button id="objectTiltMinusBtn">−1°</button>
+            <button id="objectTiltZeroBtn">0°</button>
+            <button id="objectTiltPlusBtn">+1°</button>
+            <input id="objectTiltNumber" type="number" min="-45" max="45" step="1" value="0"
+                   style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"/>
+          </div>
+
+          <button id="applyTiltObjectBtn" class="primary" style="width:100%;margin-bottom:8px">✓ Áp dụng nghiêng vật thể</button>
+          <button id="clearTiltObjectBtn" style="width:100%">✕ Bỏ chọn vật thể nghiêng</button>
+          <div id="tiltObjectInfo" class="hint" style="margin-top:8px">Chưa chọn vật thể để nghiêng.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Làm mịn da</div>
+          <button id="skinSmoothBtn" style="width:100%;margin-bottom:10px">✨ Làm mịn da</button>
+          <div class="control" style="margin-bottom:0">
+            <div class="control-row"><b>Mức làm mịn</b><span id="skinSmoothVal">55</span></div>
+            <input id="skinSmooth" type="range" min="0" max="100" step="1" value="55"/>
+          </div>
+          <div class="hint" style="margin-top:8px">Phù hợp nhất với ảnh chân dung. Hiệu ứng đã được tăng cường để nhìn rõ hơn. Nếu da còn thô hãy tăng mức làm mịn; nếu ảnh quá mềm hãy giảm xuống.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Xóa vật thể</div>
+          <button id="selectObjectBtn" style="width:100%;margin-bottom:8px">🧽 Chọn vật thể cần xóa</button>
+          <button id="removeObjectBtn" class="primary" style="width:100%;margin-bottom:8px">Xóa vật thể</button>
+          <button id="clearObjectBtn" style="width:100%">✕ Bỏ vùng chọn</button>
+          <div id="objectInfo" class="hint" style="margin-top:8px">Chưa chọn vật thể.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Cắt ảnh</div>
+          <button id="selectCropBtn" style="width:100%;margin-bottom:8px">✂ Chọn vùng cắt</button>
+          <button id="applyCropBtn" class="primary" style="width:100%;margin-bottom:8px">Cắt ảnh</button>
+          <button id="clearCropBtn" style="width:100%">✕ Bỏ vùng cắt</button>
+          <div id="cropInfo" class="hint" style="margin-top:8px">Chưa chọn vùng cắt.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Chọn vùng chỉnh sửa</div>
+          <button id="selectRegionBtn" style="width:100%;margin-bottom:8px">▭ Chọn vùng trên ảnh</button>
+          <button id="clearRegionBtn" style="width:100%">✕ Bỏ chọn vùng</button>
+          <div id="regionInfo" class="hint" style="margin-top:8px">Hiện đang chỉnh toàn bộ ảnh.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Điều chỉnh kích thước ảnh</div>
+          <div class="size-grid">
+            <div>
+              <label for="resizeWidth">Chiều rộng (px)</label>
+              <input id="resizeWidth" type="number" min="1" step="1" placeholder="Rộng"/>
+            </div>
+            <div>
+              <label for="resizeHeight">Chiều cao (px)</label>
+              <input id="resizeHeight" type="number" min="1" step="1" placeholder="Cao"/>
+            </div>
+          </div>
+          <label class="check-row">
+            <input id="lockAspect" type="checkbox" checked/>
+            <span>Giữ đúng tỷ lệ ảnh</span>
+          </label>
+          <button id="applyResize" style="width:100%">↔ Áp dụng kích thước</button>
+          <div id="resizeInfo" class="hint" style="margin-top:8px">Kích thước đầu ra sẽ hiển thị tại đây.</div>
+        </div>
+
+        <div class="section-note">
+          <div style="font-weight:700;margin-bottom:8px">Xóa nền</div>
+          <div class="control" style="margin-bottom:10px">
+            <div class="control-row"><b>Mức nhận diện nền</b><span id="bgThresholdVal">38</span></div>
+            <input id="bgThreshold" type="range" min="10" max="120" value="38"/>
+          </div>
+          <div class="control" style="margin-bottom:0">
+            <div class="control-row"><b>Làm mượt viền</b><span id="bgFeatherVal">2</span></div>
+            <input id="bgFeather" type="range" min="0" max="8" step="1" value="2"/>
+          </div>
+        </div>
+
+        <button id="applyPreset" class="primary" style="width:100%">Áp dụng chỉnh sửa</button>
+        <div id="applyStatus" class="status">✓ Đã áp dụng chỉnh sửa</div>
+        <p class="hint">“Tự động tối ưu” sẽ cân chỉnh sáng, tương phản, màu sắc và độ nét. “Xóa nền” đã được nâng cấp để nhận diện chủ thể tốt hơn. Nếu nền chưa sạch, hãy tăng “Mức nhận diện nền” và “Làm mượt viền”. Sau khi xóa nền, nên xuất <b>PNG</b> để giữ nền trong suốt.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Ảnh sau chỉnh sửa</h2>
+      <div class="stage" id="editedStage">
+        <div class="empty">Ảnh đã chỉnh sửa sẽ hiển thị tại đây.</div>
+        <canvas id="editedCanvas" hidden></canvas>
+        <div id="selectionBox" class="selection-box"></div>
+        <div id="cropBox" class="selection-box" style="border-color:#dc2626;background:rgba(220,38,38,.10)"></div>
+        <div id="objectBox" class="object-box"></div>
+        <div id="tiltObjectBox" class="tilt-object-box"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>VĂN PHÒNG TỈNH ỦY CHỈNH ẢNH TỰ ĐỘNG • Xử lý ảnh cục bộ trên thiết bị</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const originalCanvas = $('originalCanvas'), editedCanvas = $('editedCanvas');
+const octx = originalCanvas.getContext('2d',{willReadFrequently:true});
+const ectx = editedCanvas.getContext('2d',{willReadFrequently:true});
+
+let img = null;
+let originalImg = null;
+let rotation = 0;
+let bgRemovalEnabled = false;
+let skinSmoothEnabled = false;
+let renderTimer = null;
+let resizeWidth = null;
+let resizeHeight = null;
+let aspectRatio = 1;
+let regionMode = false;
+let selectedRegion = null;
+let dragStart = null;
+let cropMode = false;
+let cropRegion = null;
+let cropStart = null;
+let objectMode = false;
+let objectRegion = null;
+let objectStart = null;
+let tiltObjectMode = false;
+let tiltObjectRegion = null;
+let tiltObjectStart = null;
+let undoStack = [];
+const MAX_UNDO = 12;
+
+const sliders = ['brightness','contrast','saturate','warmth','sharpness','grayscale','blur','skinSmooth','snapTolerance','bgThreshold','bgFeather'];
+const defaults = {
+  brightness:100, contrast:100, saturate:100, warmth:0, sharpness:0, grayscale:0, blur:0, tiltAngle:0, objectTiltAngle:0, skinSmooth:55,
+  snapTolerance:38, bgThreshold:38, bgFeather:2
+};
+
+
+function snapshotState(){
+  if(!img) return null;
+  return {
+    imageSrc: img.src,
+    rotation,
+    bgRemovalEnabled,
+    skinSmoothEnabled,
+    resizeWidth,
+    resizeHeight,
+    aspectRatio,
+    selectedRegion: selectedRegion ? {...selectedRegion} : null,
+    cropRegion: cropRegion ? {...cropRegion} : null,
+    objectRegion: objectRegion ? {...objectRegion} : null,
+    tiltObjectRegion: tiltObjectRegion ? {...tiltObjectRegion} : null,
+    snapTiltObject: $('snapTiltObject') ? $('snapTiltObject').checked : true,
+    values: {
+      brightness:Number($('brightness').value),
+      contrast:Number($('contrast').value),
+      saturate:Number($('saturate').value),
+      warmth:Number($('warmth').value),
+      sharpness:Number($('sharpness').value),
+      grayscale:Number($('grayscale').value),
+      blur:Number($('blur').value),
+      tiltAngle:Number($('tiltAngle').value),
+      objectTiltAngle:Number($('objectTiltAngle').value),
+      skinSmooth:Number($('skinSmooth').value),
+      snapTolerance:Number($('snapTolerance').value),
+      bgThreshold:Number($('bgThreshold').value),
+      bgFeather:Number($('bgFeather').value)
+    }
+  };
+}
+
+function pushUndo(){
+  const s = snapshotState();
+  if(!s) return;
+  undoStack.push(s);
+  if(undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function restoreState(s){
+  if(!s) return;
+  const im = new Image();
+  im.onload = () => {
+    img = im;
+    rotation = s.rotation || 0;
+    bgRemovalEnabled = !!s.bgRemovalEnabled;
+    skinSmoothEnabled = !!s.skinSmoothEnabled;
+    resizeWidth = s.resizeWidth || im.naturalWidth;
+    resizeHeight = s.resizeHeight || im.naturalHeight;
+    aspectRatio = s.aspectRatio || (im.naturalWidth / im.naturalHeight);
+    selectedRegion = s.selectedRegion;
+    cropRegion = s.cropRegion;
+    objectRegion = s.objectRegion;
+    tiltObjectRegion = s.tiltObjectRegion || null;
+    if($('snapTiltObject')) $('snapTiltObject').checked = s.snapTiltObject !== false;
+
+    regionMode = false;
+    cropMode = false;
+    objectMode = false;
+    tiltObjectMode = false;
+    dragStart = null;
+    cropStart = null;
+    objectStart = null;
+    tiltObjectStart = null;
+
+    $('resizeWidth').value = resizeWidth;
+    $('resizeHeight').value = resizeHeight;
+    setValues(s.values || defaults);
+
+    $('selectionBox').style.display = selectedRegion ? 'block' : 'none';
+    $('cropBox').style.display = cropRegion ? 'block' : 'none';
+    $('objectBox').style.display = objectRegion ? 'block' : 'none';
+    $('tiltObjectBox').style.display = tiltObjectRegion ? 'block' : 'none';
+
+    $('selectRegionBtn').classList.remove('active-tool');
+    $('selectCropBtn').classList.remove('active-tool');
+    $('selectObjectBtn').classList.remove('active-tool');
+    $('selectTiltObjectBtn').classList.remove('active-tool');
+
+    updateRemoveBgButton();
+    updateSkinSmoothButton();
+    updateRegionInfo();
+    updateCropInfo();
+    updateObjectInfo();
+    updateTiltObjectInfo();
+    updateResizeInfo();
+    renderEdited();
+
+    if(selectedRegion) requestAnimationFrame(() => {
+      const rect = editedCanvas.getBoundingClientRect();
+      const stageRect = $('editedStage').getBoundingClientRect();
+      const box = $('selectionBox');
+      box.style.display = 'block';
+      box.style.left = (rect.left-stageRect.left + selectedRegion.x*rect.width)+'px';
+      box.style.top = (rect.top-stageRect.top + selectedRegion.y*rect.height)+'px';
+      box.style.width = (selectedRegion.w*rect.width)+'px';
+      box.style.height = (selectedRegion.h*rect.height)+'px';
+    });
+    if(cropRegion) requestAnimationFrame(positionCropBox);
+    if(objectRegion) requestAnimationFrame(positionObjectBox);
+    if(tiltObjectRegion) requestAnimationFrame(positionTiltObjectBox);
+  };
+  im.src = s.imageSrc;
+}
+
+function undo(){
+  if(!undoStack.length){
+    showStatus('Không còn bước nào để hoàn tác', '#92400e');
+    return;
+  }
+  const s = undoStack.pop();
+  restoreState(s);
+  showStatus('✓ Đã hoàn tác bước trước');
+}
+
+function showStatus(text, color){
+  const status = $('applyStatus');
+  status.textContent = text;
+  status.style.color = color || '#166534';
+  status.style.display = 'block';
+  clearTimeout(window.__statusTimer);
+  window.__statusTimer = setTimeout(() => status.style.display = 'none', 1400);
+}
+
+function setValues(v){
+  sliders.forEach(k => { if($(k) && v[k] !== undefined) $(k).value = v[k]; });
+  if($('tiltAngle') && v.tiltAngle !== undefined){
+    $('tiltAngle').value = v.tiltAngle;
+    if($('tiltNumber')) $('tiltNumber').value = v.tiltAngle;
+  }
+  if($('objectTiltAngle') && v.objectTiltAngle !== undefined){
+    $('objectTiltAngle').value = v.objectTiltAngle;
+    if($('objectTiltNumber')) $('objectTiltNumber').value = v.objectTiltAngle;
+  }
+  updateLabels();
+}
+
+function updateLabels(){
+  $('brightnessVal').textContent = $('brightness').value + '%';
+  $('contrastVal').textContent = $('contrast').value + '%';
+  $('saturateVal').textContent = $('saturate').value + '%';
+  $('warmthVal').textContent = $('warmth').value;
+  $('sharpnessVal').textContent = $('sharpness').value;
+  $('grayscaleVal').textContent = $('grayscale').value + '%';
+  $('blurVal').textContent = $('blur').value + 'px';
+  $('tiltAngleVal').textContent = $('tiltAngle').value + '°';
+  if($('tiltNumber')) $('tiltNumber').value = $('tiltAngle').value;
+  $('objectTiltAngleVal').textContent = $('objectTiltAngle').value + '°';
+  if($('objectTiltNumber')) $('objectTiltNumber').value = $('objectTiltAngle').value;
+  $('skinSmoothVal').textContent = $('skinSmooth').value;
+  $('snapToleranceVal').textContent = $('snapTolerance').value;
+  $('bgThresholdVal').textContent = $('bgThreshold').value;
+  $('bgFeatherVal').textContent = $('bgFeather').value;
+}
+
+function updateSkinSmoothButton(){
+  const btn = $('skinSmoothBtn');
+  if(skinSmoothEnabled){
+    btn.textContent = '✅ Đang làm mịn da';
+    btn.classList.add('active-tool');
+  }else{
+    btn.textContent = '✨ Làm mịn da';
+    btn.classList.remove('active-tool');
+  }
+}
+
+function updateRemoveBgButton(){
+  const btn = $('removeBgBtn');
+  if(bgRemovalEnabled){
+    btn.textContent = '✅ Đang xóa nền';
+    btn.classList.add('active-tool');
+  }else{
+    btn.textContent = '🪄 Xóa nền';
+    btn.classList.remove('active-tool');
+  }
+}
+
+sliders.forEach(k => $(k).addEventListener('change', () => {
+  if(img) pushUndo();
+}));
+
+sliders.forEach(k => $(k).addEventListener('input', () => {
+  updateLabels();
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderEdited, 40);
+}));
+
+$('fileInput').addEventListener('change', ev => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const im = new Image();
+    im.onload = () => {
+      img = im;
+      originalImg = im;
+      undoStack = [];
+      rotation = 0;
+      bgRemovalEnabled = false;
+      skinSmoothEnabled = false;
+      selectedRegion = null;
+      regionMode = false;
+      cropRegion = null;
+      cropMode = false;
+      objectRegion = null;
+      objectMode = false;
+      tiltObjectRegion = null;
+      tiltObjectMode = false;
+      tiltObjectPreviewBase = null;
+      $('tiltObjectBox').style.display = 'none';
+      updateTiltObjectInfo();
+      $('objectBox').style.display = 'none';
+      updateObjectInfo();
+      $('cropBox').style.display = 'none';
+      updateCropInfo();
+updateObjectInfo();
+      $('selectionBox').style.display = 'none';
+      updateRegionInfo();
+updateCropInfo();
+      aspectRatio = im.naturalWidth / im.naturalHeight;
+      resizeWidth = im.naturalWidth;
+      resizeHeight = im.naturalHeight;
+      $('resizeWidth').value = resizeWidth;
+      $('resizeHeight').value = resizeHeight;
+      setValues(defaults);
+      updateRemoveBgButton();
+      updateSkinSmoothButton();
+      updateResizeInfo();
+      renderOriginal();
+      renderEdited();
+    };
+    im.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function calcSize(){
+  let w = resizeWidth || img.naturalWidth;
+  let h = resizeHeight || img.naturalHeight;
+
+  // Giới hạn canvas xử lý để trình duyệt hoạt động ổn định.
+  const max = 2400;
+  const s = Math.min(1, max / Math.max(w, h));
+  return [Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))];
+}
+
+function getRequestedSize(){
+  return [
+    Math.max(1, Math.round(resizeWidth || img.naturalWidth)),
+    Math.max(1, Math.round(resizeHeight || img.naturalHeight))
+  ];
+}
+
+function updateResizeInfo(){
+  if(!img) return;
+  const [rw,rh] = getRequestedSize();
+  $('resizeInfo').textContent = `Kích thước đầu ra: ${rw} × ${rh} px`;
+}
+
+function renderOriginal(){
+  if(!originalImg) return;
+
+  const max = 1800;
+  const ow = originalImg.naturalWidth;
+  const oh = originalImg.naturalHeight;
+  const s = Math.min(1, max / Math.max(ow, oh));
+  const w = Math.max(1, Math.round(ow * s));
+  const h = Math.max(1, Math.round(oh * s));
+
+  originalCanvas.width = w;
+  originalCanvas.height = h;
+  octx.clearRect(0,0,w,h);
+  octx.drawImage(originalImg,0,0,w,h);
+  originalCanvas.hidden = false;
+  $('originalStage').querySelector('.empty')?.remove();
+}
+
+function applyWarmth(imageData, amount){
+  if(!amount) return imageData;
+  const d = imageData.data;
+  for(let i=0;i<d.length;i+=4){
+    d[i]   = Math.min(255, Math.max(0, d[i]   + amount * 0.9));
+    d[i+2] = Math.min(255, Math.max(0, d[i+2] - amount * 0.7));
+  }
+  return imageData;
+}
+
+function sharpen(imageData, strength){
+  if(strength <= 0) return imageData;
+  const {width:w, height:h, data:src} = imageData;
+  const out = new Uint8ClampedArray(src);
+  const a = Math.min(0.75, strength * 0.18);
+
+  for(let y=1; y<h-1; y++){
+    for(let x=1; x<w-1; x++){
+      const idx = (y*w + x) * 4;
+      for(let c=0; c<3; c++){
+        const center = src[idx+c] * 5;
+        const n = src[((y-1)*w+x)*4+c] + src[((y+1)*w+x)*4+c] + src[(y*w+x-1)*4+c] + src[(y*w+x+1)*4+c];
+        out[idx+c] = Math.max(0, Math.min(255, src[idx+c] * (1-a) + (center - n) * a));
+      }
+    }
+  }
+  return new ImageData(out, w, h);
+}
+
+function isSkinLike(r,g,b){
+  const maxv = Math.max(r,g,b);
+  const minv = Math.min(r,g,b);
+  const rgDiff = Math.abs(r-g);
+  const classic = r > 95 && g > 40 && b > 20 && (maxv-minv) > 15 && rgDiff > 15 && r > g && r > b;
+  const y = 0.299*r + 0.587*g + 0.114*b;
+  const cb = 128 - 0.168736*r - 0.331264*g + 0.5*b;
+  const cr = 128 + 0.5*r - 0.418688*g - 0.081312*b;
+  const ycc = cr > 135 && cr < 180 && cb > 85 && cb < 140 && y > 60;
+  return classic || ycc;
+}
+
+function smoothSkin(imageData, amount){
+  if(amount <= 0) return imageData;
+
+  const {width:w, height:h, data:src} = imageData;
+  const out = new Uint8ClampedArray(src);
+
+  // Tạo một bản ảnh bị blur bằng canvas filter để làm nguồn "da mịn"
+  const baseCanvas = document.createElement('canvas');
+  baseCanvas.width = w;
+  baseCanvas.height = h;
+  const bctx = baseCanvas.getContext('2d', {willReadFrequently:true});
+  bctx.putImageData(imageData, 0, 0);
+
+  const blurCanvas = document.createElement('canvas');
+  blurCanvas.width = w;
+  blurCanvas.height = h;
+  const blurCtx = blurCanvas.getContext('2d', {willReadFrequently:true});
+
+  const blurPx = Math.max(1.5, Math.min(6.5, amount / 14));
+  blurCtx.filter = `blur(${blurPx}px)`;
+  blurCtx.drawImage(baseCanvas, 0, 0);
+  blurCtx.filter = 'none';
+
+  const blurData = blurCtx.getImageData(0,0,w,h).data;
+  const blendBase = Math.min(0.88, 0.16 + amount / 110);
+  const brighten = Math.min(10, amount * 0.08);
+
+  for(let y=1; y<h-1; y++){
+    for(let x=1; x<w-1; x++){
+      const idx = (y*w + x) * 4;
+      const r = src[idx], g = src[idx+1], b = src[idx+2];
+
+      if(!isSkinLike(r,g,b)) continue;
+
+      const br = blurData[idx], bg = blurData[idx+1], bb = blurData[idx+2];
+
+      // Bảo vệ bớt biên/chi tiết mạnh để mắt, tóc, môi đỡ bị nhòe
+      const diff = (Math.abs(r-br) + Math.abs(g-bg) + Math.abs(b-bb)) / 3;
+      const edgeProtect = diff > 28 ? 0.55 : (diff > 18 ? 0.75 : 1.0);
+      const blend = blendBase * edgeProtect;
+
+      let nr = r * (1-blend) + br * blend;
+      let ng = g * (1-blend) + bg * blend;
+      let nb = b * (1-blend) + bb * blend;
+
+      // Giảm nhẹ độ gắt hạt da, làm da mượt và tươi hơn
+      const mean = (nr + ng + nb) / 3;
+      const toneBlend = Math.min(0.22, amount / 420);
+      nr = nr * (1-toneBlend) + mean * toneBlend + brighten * 0.35;
+      ng = ng * (1-toneBlend) + mean * toneBlend + brighten * 0.22;
+      nb = nb * (1-toneBlend) + mean * toneBlend + brighten * 0.12;
+
+      out[idx]   = Math.max(0, Math.min(255, nr));
+      out[idx+1] = Math.max(0, Math.min(255, ng));
+      out[idx+2] = Math.max(0, Math.min(255, nb));
+    }
+  }
+
+  return new ImageData(out, w, h);
+}
+
+function sampleBackgroundColor(data, w, h){
+  const border = Math.max(2, Math.round(Math.min(w,h) * 0.03));
+  let rs=0, gs=0, bs=0, count=0;
+
+  for(let y=0; y<h; y++){
+    for(let x=0; x<w; x++){
+      if(x < border || x >= w-border || y < border || y >= h-border){
+        const i = (y*w + x) * 4;
+        rs += data[i];
+        gs += data[i+1];
+        bs += data[i+2];
+        count++;
+      }
+    }
+  }
+  return {
+    r: rs / Math.max(1,count),
+    g: gs / Math.max(1,count),
+    b: bs / Math.max(1,count)
+  };
+}
+
+function removeBackgroundCanvas(sourceCanvas, threshold, feather){
+  const sw = sourceCanvas.width, sh = sourceCanvas.height;
+  const scale = Math.min(1, 800 / Math.max(sw, sh));
+  const mw = Math.max(4, Math.round(sw * scale));
+  const mh = Math.max(4, Math.round(sh * scale));
+
+  const mini = document.createElement('canvas');
+  mini.width = mw;
+  mini.height = mh;
+  const mctx = mini.getContext('2d', {willReadFrequently:true});
+  mctx.drawImage(sourceCanvas, 0, 0, mw, mh);
+
+  const imgData = mctx.getImageData(0,0,mw,mh);
+  const d = imgData.data;
+  const total = mw * mh;
+
+  function getRGB(idx){
+    const i = idx * 4;
+    return [d[i], d[i+1], d[i+2]];
+  }
+
+  function avgPatch(x0,y0,size){
+    let rs=0, gs=0, bs=0, c=0;
+    for(let y=y0; y<Math.min(mh, y0+size); y++){
+      for(let x=x0; x<Math.min(mw, x0+size); x++){
+        const i = (y*mw + x) * 4;
+        rs += d[i];
+        gs += d[i+1];
+        bs += d[i+2];
+        c++;
+      }
+    }
+    return {r:rs/Math.max(1,c), g:gs/Math.max(1,c), b:bs/Math.max(1,c)};
+  }
+
+  function avgBorder(){
+    let rs=0, gs=0, bs=0, c=0;
+    const border = Math.max(2, Math.round(Math.min(mw,mh) * 0.04));
+    for(let y=0; y<mh; y++){
+      for(let x=0; x<mw; x++){
+        if(x < border || x >= mw-border || y < border || y >= mh-border){
+          const i = (y*mw + x) * 4;
+          rs += d[i];
+          gs += d[i+1];
+          bs += d[i+2];
+          c++;
+        }
+      }
+    }
+    return {r:rs/Math.max(1,c), g:gs/Math.max(1,c), b:bs/Math.max(1,c)};
+  }
+
+  const patch = Math.max(4, Math.round(Math.min(mw,mh) * 0.08));
+  const bgModels = [
+    avgPatch(0, 0, patch),
+    avgPatch(mw-patch, 0, patch),
+    avgPatch(0, mh-patch, patch),
+    avgPatch(mw-patch, mh-patch, patch),
+    avgBorder()
+  ];
+
+  function minBgDist(idx){
+    const [r,g,b] = getRGB(idx);
+    let best = Infinity;
+    for(const bg of bgModels){
+      const dr = r - bg.r, dg = g - bg.g, db = b - bg.b;
+      const dist = dr*dr + dg*dg + db*db;
+      if(dist < best) best = dist;
+    }
+    return best;
+  }
+
+  function brightness(idx){
+    const i = idx * 4;
+    return (d[i] + d[i+1] + d[i+2]) / 3;
+  }
+
+  const bgBrightness = bgModels.reduce((s,v)=>s + (v.r+v.g+v.b)/3, 0) / bgModels.length;
+  const baseLimit = threshold * threshold * 3;
+  const seedLimit = baseLimit * 1.1;
+  const growLimit = baseLimit * 1.45;
+
+  const state = new Uint8Array(total); // 0 unknown, 1 foreground-ish, 2 background
+  const queue = new Int32Array(total);
+  let head = 0, tail = 0;
+
+  function maybeSeed(idx){
+    if(state[idx] !== 0) return;
+    const dist = minBgDist(idx);
+    const bGap = Math.abs(brightness(idx) - bgBrightness);
+    if(dist <= seedLimit && bGap <= threshold * 1.2){
+      state[idx] = 2;
+      queue[tail++] = idx;
+    }else{
+      state[idx] = 1;
+    }
+  }
+
+  for(let x=0; x<mw; x++){
+    maybeSeed(x);
+    maybeSeed((mh-1)*mw + x);
+  }
+  for(let y=0; y<mh; y++){
+    maybeSeed(y*mw);
+    maybeSeed(y*mw + (mw-1));
+  }
+
+  function tryGrow(idx){
+    if(idx < 0 || idx >= total || state[idx] !== 0) return;
+    const dist = minBgDist(idx);
+    const bGap = Math.abs(brightness(idx) - bgBrightness);
+    if(dist <= growLimit && bGap <= threshold * 1.4){
+      state[idx] = 2;
+      queue[tail++] = idx;
+    }else{
+      state[idx] = 1;
+    }
+  }
+
+  while(head < tail){
+    const idx = queue[head++];
+    const x = idx % mw;
+    const y = (idx / mw) | 0;
+
+    if(x > 0) tryGrow(idx - 1);
+    if(x < mw - 1) tryGrow(idx + 1);
+    if(y > 0) tryGrow(idx - mw);
+    if(y < mh - 1) tryGrow(idx + mw);
+  }
+
+  // foreground mask from non-background pixels
+  const fg = new Uint8Array(total);
+  for(let i=0; i<total; i++) fg[i] = state[i] === 2 ? 0 : 1;
+
+  // keep the most likely subject component (largest + center-biased)
+  const visited = new Uint8Array(total);
+  const compQueue = new Int32Array(total);
+  let bestPixels = null;
+  let bestScore = -1;
+  const cx = mw / 2, cy = mh / 2;
+  const centerRadius = Math.min(mw, mh) * 0.22;
+
+  for(let start=0; start<total; start++){
+    if(!fg[start] || visited[start]) continue;
+
+    let qh = 0, qt = 0;
+    compQueue[qt++] = start;
+    visited[start] = 1;
+
+    let area = 0, centerHits = 0, touchesBorder = 0;
+    const pixels = [];
+
+    while(qh < qt){
+      const idx = compQueue[qh++];
+      pixels.push(idx);
+      area++;
+      const x = idx % mw;
+      const y = (idx / mw) | 0;
+
+      const dx = x - cx, dy = y - cy;
+      if((dx*dx + dy*dy) <= centerRadius * centerRadius) centerHits++;
+      if(x === 0 || y === 0 || x === mw-1 || y === mh-1) touchesBorder++;
+
+      const n1 = idx - 1, n2 = idx + 1, n3 = idx - mw, n4 = idx + mw;
+      if(x > 0 && fg[n1] && !visited[n1]){ visited[n1] = 1; compQueue[qt++] = n1; }
+      if(x < mw-1 && fg[n2] && !visited[n2]){ visited[n2] = 1; compQueue[qt++] = n2; }
+      if(y > 0 && fg[n3] && !visited[n3]){ visited[n3] = 1; compQueue[qt++] = n3; }
+      if(y < mh-1 && fg[n4] && !visited[n4]){ visited[n4] = 1; compQueue[qt++] = n4; }
+    }
+
+    const borderPenalty = touchesBorder > area * 0.08 ? area * 0.18 : 0;
+    const score = area + centerHits * 6 - borderPenalty;
+    if(score > bestScore){
+      bestScore = score;
+      bestPixels = pixels;
+    }
+  }
+
+  const finalFg = new Uint8Array(total);
+  if(bestPixels){
+    for(const idx of bestPixels) finalFg[idx] = 1;
+  }else{
+    for(let i=0; i<total; i++) finalFg[i] = fg[i];
+  }
+
+  function dilate(srcMask, radius){
+    const out = new Uint8Array(total);
+    for(let y=0; y<mh; y++){
+      for(let x=0; x<mw; x++){
+        let hit = 0;
+        for(let yy=Math.max(0,y-radius); yy<=Math.min(mh-1,y+radius) && !hit; yy++){
+          for(let xx=Math.max(0,x-radius); xx<=Math.min(mw-1,x+radius); xx++){
+            if(srcMask[yy*mw+xx]){ hit = 1; break; }
+          }
+        }
+        out[y*mw+x] = hit;
+      }
+    }
+    return out;
+  }
+
+  function erode(srcMask, radius){
+    const out = new Uint8Array(total);
+    for(let y=0; y<mh; y++){
+      for(let x=0; x<mw; x++){
+        let keep = 1;
+        for(let yy=Math.max(0,y-radius); yy<=Math.min(mh-1,y+radius) && keep; yy++){
+          for(let xx=Math.max(0,x-radius); xx<=Math.min(mw-1,x+radius); xx++){
+            if(!srcMask[yy*mw+xx]){ keep = 0; break; }
+          }
+        }
+        out[y*mw+x] = keep;
+      }
+    }
+    return out;
+  }
+
+  const radius = threshold > 55 ? 2 : 1;
+  let refined = dilate(finalFg, radius);
+  refined = erode(refined, radius);
+
+  const mask = document.createElement('canvas');
+  mask.width = mw;
+  mask.height = mh;
+  const maskCtx = mask.getContext('2d', {willReadFrequently:true});
+  const maskData = maskCtx.createImageData(mw, mh);
+
+  for(let idx=0; idx<total; idx++){
+    const j = idx * 4;
+    const alpha = refined[idx] ? 255 : 0;
+    maskData.data[j] = 255;
+    maskData.data[j+1] = 255;
+    maskData.data[j+2] = 255;
+    maskData.data[j+3] = alpha;
+  }
+  maskCtx.putImageData(maskData, 0, 0);
+
+  let finalMask = mask;
+  if(feather > 0){
+    const soft = document.createElement('canvas');
+    soft.width = mw;
+    soft.height = mh;
+    const sctx = soft.getContext('2d');
+    sctx.filter = `blur(${feather}px)`;
+    sctx.drawImage(mask, 0, 0);
+    sctx.filter = 'none';
+    finalMask = soft;
+  }
+
+  const out = document.createElement('canvas');
+  out.width = sw;
+  out.height = sh;
+  const outCtx = out.getContext('2d');
+  outCtx.clearRect(0,0,sw,sh);
+  outCtx.drawImage(sourceCanvas, 0, 0);
+  outCtx.globalCompositeOperation = 'destination-in';
+  outCtx.imageSmoothingEnabled = true;
+  outCtx.drawImage(finalMask, 0, 0, sw, sh);
+  outCtx.globalCompositeOperation = 'source-over';
+
+  return out;
+}
+
+function buildEditedSourceCanvas(){
+  const [baseW, baseH] = calcSize();
+
+  const base = document.createElement('canvas');
+  base.width = baseW;
+  base.height = baseH;
+  const bctx = base.getContext('2d', {willReadFrequently:true});
+  bctx.drawImage(img, 0, 0, baseW, baseH);
+
+  const edited = document.createElement('canvas');
+  edited.width = baseW;
+  edited.height = baseH;
+  const tctx = edited.getContext('2d', {willReadFrequently:true});
+  tctx.filter = `brightness(${$('brightness').value}%) contrast(${$('contrast').value}%) saturate(${$('saturate').value}%) grayscale(${$('grayscale').value}%) blur(${$('blur').value}px)`;
+  tctx.drawImage(img, 0, 0, baseW, baseH);
+  tctx.filter = 'none';
+
+  let px = tctx.getImageData(0,0,baseW,baseH);
+  px = applyWarmth(px, Number($('warmth').value));
+  if(skinSmoothEnabled){
+    px = smoothSkin(px, Number($('skinSmooth').value));
+  }
+  px = sharpen(px, Number($('sharpness').value));
+  tctx.putImageData(px, 0, 0);
+
+  let temp = edited;
+
+  if(selectedRegion){
+    const composite = document.createElement('canvas');
+    composite.width = baseW;
+    composite.height = baseH;
+    const cctx = composite.getContext('2d');
+    cctx.drawImage(base,0,0);
+
+    const rx = Math.max(0, Math.min(baseW, Math.round(selectedRegion.x * baseW)));
+    const ry = Math.max(0, Math.min(baseH, Math.round(selectedRegion.y * baseH)));
+    const rw = Math.max(1, Math.min(baseW-rx, Math.round(selectedRegion.w * baseW)));
+    const rh = Math.max(1, Math.min(baseH-ry, Math.round(selectedRegion.h * baseH)));
+
+    cctx.save();
+    cctx.beginPath();
+    cctx.rect(rx,ry,rw,rh);
+    cctx.clip();
+    cctx.drawImage(edited,0,0);
+    cctx.restore();
+    temp = composite;
+  }
+
+  if(bgRemovalEnabled){
+    return removeBackgroundCanvas(temp, Number($('bgThreshold').value), Number($('bgFeather').value));
+  }
+  return temp;
+}
+
+function renderEdited(){
+  if(!img) return;
+
+  const sourceCanvas = buildEditedSourceCanvas();
+  const baseW = sourceCanvas.width;
+  const baseH = sourceCanvas.height;
+
+  const totalDeg = rotation + Number($('tiltAngle').value || 0);
+  const rad = totalDeg * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+
+  editedCanvas.width = Math.max(1, Math.ceil(baseW * cos + baseH * sin));
+  editedCanvas.height = Math.max(1, Math.ceil(baseW * sin + baseH * cos));
+
+  ectx.clearRect(0,0,editedCanvas.width,editedCanvas.height);
+  ectx.save();
+  ectx.imageSmoothingEnabled = true;
+  ectx.imageSmoothingQuality = 'high';
+  ectx.translate(editedCanvas.width/2, editedCanvas.height/2);
+  ectx.rotate(rad);
+  ectx.drawImage(sourceCanvas, -baseW/2, -baseH/2);
+  ectx.restore();
+
+  editedCanvas.hidden = false;
+  $('editedStage').querySelector('.empty')?.remove();
+  if(cropRegion) requestAnimationFrame(positionCropBox);
+  if(objectRegion) requestAnimationFrame(positionObjectBox);
+  if(tiltObjectRegion) requestAnimationFrame(positionTiltObjectBox);
+}
+
+function averageLuminance(){
+  const [w,h] = calcSize();
+  const c = document.createElement('canvas');
+  c.width = Math.min(300,w);
+  c.height = Math.min(300,h);
+  const cx = c.getContext('2d',{willReadFrequently:true});
+  cx.drawImage(img,0,0,c.width,c.height);
+  const d = cx.getImageData(0,0,c.width,c.height).data;
+  let sum = 0, count = 0;
+  for(let i=0;i<d.length;i+=16){
+    sum += 0.2126*d[i] + 0.7152*d[i+1] + 0.0722*d[i+2];
+    count++;
+  }
+  return sum / Math.max(1,count);
+}
+
+
+
+
+
+
+
+let tiltObjectPreviewBase = null;
+
+function captureTiltObjectPreviewBase(){
+  if(!tiltObjectRegion || editedCanvas.hidden) return;
+  tiltObjectPreviewBase = document.createElement('canvas');
+  tiltObjectPreviewBase.width = editedCanvas.width;
+  tiltObjectPreviewBase.height = editedCanvas.height;
+  tiltObjectPreviewBase.getContext('2d').drawImage(editedCanvas,0,0);
+}
+
+function previewTiltObject(){
+  if(!img || !tiltObjectRegion) return;
+  if(!tiltObjectPreviewBase) captureTiltObjectPreviewBase();
+  if(!tiltObjectPreviewBase) return;
+
+  const angle = Number($('objectTiltAngle').value || 0);
+  const preview = tiltObjectOnCanvas(tiltObjectPreviewBase, tiltObjectRegion, angle);
+
+  editedCanvas.width = preview.width;
+  editedCanvas.height = preview.height;
+  ectx.clearRect(0,0,editedCanvas.width,editedCanvas.height);
+  ectx.drawImage(preview,0,0);
+  editedCanvas.hidden = false;
+
+  requestAnimationFrame(positionTiltObjectBox);
+}
+
+function setObjectTiltAngle(value){
+  if(!img) return;
+  let v = Number(value);
+  if(!Number.isFinite(v)) v = 0;
+  v = Math.max(-45, Math.min(45, Math.round(v)));
+
+  $('objectTiltAngle').value = v;
+  $('objectTiltNumber').value = v;
+  $('objectTiltAngleVal').textContent = v + '°';
+
+  if(tiltObjectRegion) previewTiltObject();
+}
+
+
+$('snapTiltObject').addEventListener('change', ()=>{
+  if(tiltObjectRegion && $('snapTiltObject').checked){
+    tiltObjectRegion = snapRegionToObject(tiltObjectRegion);
+    tiltObjectPreviewBase = null;
+    captureTiltObjectPreviewBase();
+    previewTiltObject();
+    updateTiltObjectInfo();
+    positionTiltObjectBox();
+  }
+});
+
+$('snapTolerance').addEventListener('change', ()=>{
+  if(tiltObjectRegion && $('snapTiltObject').checked){
+    tiltObjectRegion = snapRegionToObject(tiltObjectRegion);
+    tiltObjectPreviewBase = null;
+    captureTiltObjectPreviewBase();
+    previewTiltObject();
+    updateTiltObjectInfo();
+    positionTiltObjectBox();
+  }
+});
+
+$('objectTiltAngle').addEventListener('input', e => {
+  const v = Number(e.target.value);
+  $('objectTiltNumber').value = v;
+  $('objectTiltAngleVal').textContent = v + '°';
+  if(tiltObjectRegion) previewTiltObject();
+});
+
+$('objectTiltNumber').addEventListener('change', e => {
+  setObjectTiltAngle(e.target.value);
+});
+
+$('objectTiltMinusBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setObjectTiltAngle(Number($('objectTiltAngle').value) - 1);
+};
+
+$('objectTiltPlusBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setObjectTiltAngle(Number($('objectTiltAngle').value) + 1);
+};
+
+$('objectTiltZeroBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setObjectTiltAngle(0);
+};
+
+
+function snapRegionToObject(region){
+  if(!region || !$('snapTiltObject')?.checked) return region;
+
+  const rect = editedCanvas.getBoundingClientRect();
+  if(rect.width <= 0 || rect.height <= 0) return region;
+
+  const sx = Math.max(0, Math.round(region.x * editedCanvas.width));
+  const sy = Math.max(0, Math.round(region.y * editedCanvas.height));
+  const sw = Math.max(8, Math.round(region.w * editedCanvas.width));
+  const sh = Math.max(8, Math.round(region.h * editedCanvas.height));
+
+  const x2 = Math.min(editedCanvas.width, sx + sw);
+  const y2 = Math.min(editedCanvas.height, sy + sh);
+  const w = Math.max(1, x2 - sx);
+  const h = Math.max(1, y2 - sy);
+
+  const temp = document.createElement('canvas');
+  temp.width = w;
+  temp.height = h;
+  const tctx = temp.getContext('2d', {willReadFrequently:true});
+  tctx.drawImage(editedCanvas, sx, sy, w, h, 0, 0, w, h);
+
+  const data = tctx.getImageData(0,0,w,h).data;
+  const tol = Number($('snapTolerance').value || 38);
+  const edge = Math.max(2, Math.round(Math.min(w,h) * 0.05));
+
+  let rs=0, gs=0, bs=0, count=0;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      if(x < edge || x >= w-edge || y < edge || y >= h-edge){
+        const i=(y*w+x)*4;
+        rs+=data[i]; gs+=data[i+1]; bs+=data[i+2]; count++;
+      }
+    }
+  }
+  const br=rs/Math.max(1,count), bg=gs/Math.max(1,count), bb=bs/Math.max(1,count);
+  const limit = tol*tol*3;
+
+  const fg = new Uint8Array(w*h);
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const idx=y*w+x, i=idx*4;
+      const dr=data[i]-br, dg=data[i+1]-bg, db=data[i+2]-bb;
+      const dist=dr*dr+dg*dg+db*db;
+      if(dist > limit) fg[idx]=1;
+    }
+  }
+
+  // Keep largest foreground component near center
+  const seen = new Uint8Array(w*h);
+  const q = new Int32Array(w*h);
+  let best=null, bestScore=-1;
+  const cx=w/2, cy=h/2;
+
+  for(let start=0; start<w*h; start++){
+    if(!fg[start] || seen[start]) continue;
+    let qh=0, qt=0;
+    q[qt++]=start; seen[start]=1;
+    let minX=w, minY=h, maxX=0, maxY=0, area=0, centerHits=0;
+
+    while(qh<qt){
+      const idx=q[qh++], x=idx%w, y=(idx/w)|0;
+      area++;
+      minX=Math.min(minX,x); minY=Math.min(minY,y);
+      maxX=Math.max(maxX,x); maxY=Math.max(maxY,y);
+
+      const dx=x-cx, dy=y-cy;
+      if(dx*dx+dy*dy < Math.pow(Math.min(w,h)*0.28,2)) centerHits++;
+
+      const neigh = [];
+      if(x>0) neigh.push(idx-1);
+      if(x<w-1) neigh.push(idx+1);
+      if(y>0) neigh.push(idx-w);
+      if(y<h-1) neigh.push(idx+w);
+
+      for(const n of neigh){
+        if(fg[n] && !seen[n]){ seen[n]=1; q[qt++]=n; }
+      }
+    }
+
+    const score = area + centerHits*3;
+    if(score > bestScore){
+      bestScore=score;
+      best={minX,minY,maxX,maxY,area};
+    }
+  }
+
+  if(!best || best.area < Math.max(20, w*h*0.01)) return region;
+
+  const pad = Math.max(2, Math.round(Math.min(w,h)*0.03));
+  const bx1=Math.max(0,best.minX-pad), by1=Math.max(0,best.minY-pad);
+  const bx2=Math.min(w-1,best.maxX+pad), by2=Math.min(h-1,best.maxY+pad);
+
+  return {
+    x:(sx+bx1)/editedCanvas.width,
+    y:(sy+by1)/editedCanvas.height,
+    w:Math.max(1,bx2-bx1+1)/editedCanvas.width,
+    h:Math.max(1,by2-by1+1)/editedCanvas.height
+  };
+}
+
+$('snapTolerance').addEventListener('input', ()=>{
+  $('snapToleranceVal').textContent = $('snapTolerance').value;
+});
+
+function updateTiltObjectInfo(){
+  if(tiltObjectRegion){
+    $('tiltObjectInfo').textContent = `Vật thể nghiêng: ${Math.round(tiltObjectRegion.w*100)}% × ${Math.round(tiltObjectRegion.h*100)}% ảnh`;
+  }else{
+    $('tiltObjectInfo').textContent = 'Chưa chọn vật thể để nghiêng.';
+  }
+}
+
+function positionTiltObjectBox(){
+  if(!tiltObjectRegion || editedCanvas.hidden) return;
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('tiltObjectBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + tiltObjectRegion.x * rect.width) + 'px';
+  box.style.top = (rect.top - stageRect.top + tiltObjectRegion.y * rect.height) + 'px';
+  box.style.width = (tiltObjectRegion.w * rect.width) + 'px';
+  box.style.height = (tiltObjectRegion.h * rect.height) + 'px';
+}
+
+function tiltObjectOnCanvas(sourceCanvas, region, angle){
+  const out = removeObjectByPatch(sourceCanvas, region);
+  const ctx = out.getContext('2d');
+
+  const x = Math.max(0, Math.round(region.x * out.width));
+  const y = Math.max(0, Math.round(region.y * out.height));
+  const w = Math.max(1, Math.round(region.w * out.width));
+  const h = Math.max(1, Math.round(region.h * out.height));
+
+  const patch = document.createElement('canvas');
+  patch.width = w;
+  patch.height = h;
+  const pctx = patch.getContext('2d');
+  pctx.drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
+
+  ctx.save();
+  ctx.translate(x + w/2, y + h/2);
+  ctx.rotate(angle * Math.PI / 180);
+  ctx.drawImage(patch, -w/2, -h/2);
+  ctx.restore();
+
+  return out;
+}
+
+$('selectTiltObjectBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  tiltObjectMode = true;
+  objectMode = false;
+  cropMode = false;
+  regionMode = false;
+  tiltObjectStart = null;
+  objectStart = null;
+  cropStart = null;
+  dragStart = null;
+  $('selectTiltObjectBtn').classList.add('active-tool');
+  $('selectTiltObjectBtn').textContent = '✓ Kéo chuột chọn vật thể nghiêng';
+  $('selectObjectBtn').classList.remove('active-tool');
+  $('selectCropBtn').classList.remove('active-tool');
+  $('selectRegionBtn').classList.remove('active-tool');
+  showStatus('Kéo chuột trên ảnh bên phải để chọn vật thể cần nghiêng');
+};
+
+$('clearTiltObjectBtn').onclick = () => {
+  tiltObjectMode = false;
+  tiltObjectStart = null;
+  tiltObjectRegion = null;
+  tiltObjectPreviewBase = null;
+  $('tiltObjectBox').style.display = 'none';
+  $('selectTiltObjectBtn').classList.remove('active-tool');
+  $('selectTiltObjectBtn').textContent = '🔲 Chọn vật thể để nghiêng';
+  updateTiltObjectInfo();
+  showStatus('✓ Đã bỏ chọn vật thể nghiêng');
+};
+
+$('applyTiltObjectBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  if(!tiltObjectRegion){ alert('Hãy chọn vật thể để nghiêng trước.'); return; }
+  pushUndo();
+
+  if(!tiltObjectPreviewBase) captureTiltObjectPreviewBase();
+  const tilted = tiltObjectOnCanvas(tiltObjectPreviewBase, tiltObjectRegion, Number($('objectTiltAngle').value || 0));
+  const dataURL = tilted.toDataURL('image/png');
+
+  const im = new Image();
+  im.onload = () => {
+    img = im;
+    rotation = 0;
+    selectedRegion = null;
+    cropRegion = null;
+    objectRegion = null;
+    tiltObjectRegion = null;
+    tiltObjectPreviewBase = null;
+    regionMode = false;
+    cropMode = false;
+    objectMode = false;
+    tiltObjectMode = false;
+    bgRemovalEnabled = false;
+    skinSmoothEnabled = false;
+
+    resizeWidth = im.naturalWidth;
+    resizeHeight = im.naturalHeight;
+    aspectRatio = im.naturalWidth / im.naturalHeight;
+    $('resizeWidth').value = resizeWidth;
+    $('resizeHeight').value = resizeHeight;
+
+    $('selectionBox').style.display = 'none';
+    $('cropBox').style.display = 'none';
+    $('objectBox').style.display = 'none';
+    $('tiltObjectBox').style.display = 'none';
+    $('tiltObjectBox').style.display = 'none';
+
+    $('selectObjectBtn').classList.remove('active-tool');
+    $('selectObjectBtn').textContent = '🧽 Chọn vật thể cần xóa';
+    $('selectTiltObjectBtn').classList.remove('active-tool');
+    $('selectTiltObjectBtn').textContent = '🔲 Chọn vật thể để nghiêng';
+
+    setValues(defaults);
+    updateRemoveBgButton();
+    updateSkinSmoothButton();
+    updateObjectInfo();
+    updateTiltObjectInfo();
+    updateCropInfo();
+    updateTiltObjectInfo();
+    updateRegionInfo();
+    updateResizeInfo();
+    renderEdited();
+    showStatus('✓ Đã nghiêng vật thể');
+  };
+  im.src = dataURL;
+};
+
+editedCanvas.addEventListener('mousedown', e => {
+  if(!tiltObjectMode || !img) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  const rect = editedCanvas.getBoundingClientRect();
+  tiltObjectStart = {
+    x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+  };
+
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('tiltObjectBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + tiltObjectStart.x) + 'px';
+  box.style.top = (rect.top - stageRect.top + tiltObjectStart.y) + 'px';
+  box.style.width = '0px';
+  box.style.height = '0px';
+}, true);
+
+window.addEventListener('mousemove', e => {
+  if(!tiltObjectStart || !tiltObjectMode) return;
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(tiltObjectStart.x, x);
+  const top = Math.min(tiltObjectStart.y, y);
+  const w = Math.abs(x - tiltObjectStart.x);
+  const h = Math.abs(y - tiltObjectStart.y);
+
+  const box = $('tiltObjectBox');
+  box.style.left = (rect.left - stageRect.left + left) + 'px';
+  box.style.top = (rect.top - stageRect.top + top) + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+}, true);
+
+window.addEventListener('mouseup', e => {
+  if(!tiltObjectStart || !tiltObjectMode) return;
+
+  const rect = editedCanvas.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(tiltObjectStart.x, x);
+  const top = Math.min(tiltObjectStart.y, y);
+  const w = Math.abs(x - tiltObjectStart.x);
+  const h = Math.abs(y - tiltObjectStart.y);
+
+  tiltObjectStart = null;
+  if(w < 8 || h < 8){
+    $('tiltObjectBox').style.display = 'none';
+    return;
+  }
+
+  tiltObjectRegion = {
+    x: left / rect.width,
+    y: top / rect.height,
+    w: w / rect.width,
+    h: h / rect.height
+  };
+
+  tiltObjectRegion = snapRegionToObject(tiltObjectRegion);
+
+  tiltObjectMode = false;
+  $('selectTiltObjectBtn').classList.remove('active-tool');
+  $('selectTiltObjectBtn').textContent = '🔲 Chọn lại vật thể nghiêng';
+  updateTiltObjectInfo();
+  positionTiltObjectBox();
+  tiltObjectPreviewBase = null;
+  captureTiltObjectPreviewBase();
+  previewTiltObject();
+  showStatus($('snapTiltObject').checked ? '✓ Đã bám theo vật thể. Kéo góc để xem nghiêng ngay.' : '✓ Đã chọn vùng vật thể. Kéo góc để xem nghiêng ngay.');
+}, true);
+
+function updateObjectInfo(){
+  if(objectRegion){
+    $('objectInfo').textContent = `Vùng vật thể: ${Math.round(objectRegion.w*100)}% × ${Math.round(objectRegion.h*100)}% ảnh`;
+  }else{
+    $('objectInfo').textContent = 'Chưa chọn vật thể.';
+  }
+}
+
+function positionObjectBox(){
+  if(!objectRegion || editedCanvas.hidden) return;
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('objectBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + objectRegion.x * rect.width) + 'px';
+  box.style.top = (rect.top - stageRect.top + objectRegion.y * rect.height) + 'px';
+  box.style.width = (objectRegion.w * rect.width) + 'px';
+  box.style.height = (objectRegion.h * rect.height) + 'px';
+}
+
+$('selectObjectBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  objectMode = true;
+  cropMode = false;
+  regionMode = false;
+  cropStart = null;
+  dragStart = null;
+  $('selectObjectBtn').classList.add('active-tool');
+  $('selectObjectBtn').textContent = '✓ Kéo chuột khoanh vật thể';
+  $('selectCropBtn').classList.remove('active-tool');
+  $('selectRegionBtn').classList.remove('active-tool');
+  showStatus('Kéo chuột trên ảnh bên phải để khoanh vật thể cần xóa');
+};
+
+$('clearObjectBtn').onclick = () => {
+  objectMode = false;
+  objectStart = null;
+  objectRegion = null;
+  $('objectBox').style.display = 'none';
+  $('selectObjectBtn').classList.remove('active-tool');
+  $('selectObjectBtn').textContent = '🧽 Chọn vật thể cần xóa';
+  updateObjectInfo();
+  showStatus('✓ Đã bỏ vùng chọn vật thể');
+};
+
+function removeObjectByPatch(sourceCanvas, region){
+  const out = document.createElement('canvas');
+  out.width = sourceCanvas.width;
+  out.height = sourceCanvas.height;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(sourceCanvas,0,0);
+
+  const x = Math.max(0, Math.round(region.x * out.width));
+  const y = Math.max(0, Math.round(region.y * out.height));
+  const w = Math.max(1, Math.round(region.w * out.width));
+  const h = Math.max(1, Math.round(region.h * out.height));
+
+  const pad = Math.max(8, Math.round(Math.min(w,h) * 0.35));
+
+  const candidates = [
+    {sx: Math.max(0, x-w-pad), sy:y},
+    {sx: Math.min(out.width-w, x+w+pad), sy:y},
+    {sx:x, sy:Math.max(0, y-h-pad)},
+    {sx:x, sy:Math.min(out.height-h, y+h+pad)}
+  ].filter(c => c.sx >= 0 && c.sy >= 0 && c.sx+w <= out.width && c.sy+h <= out.height);
+
+  let chosen = candidates[0] || {sx:Math.max(0,x-w), sy:y};
+
+  // Prefer a source patch nearest to the selected object while staying inside bounds
+  let bestDist = Infinity;
+  for(const c of candidates){
+    const dx = (c.sx + w/2) - (x + w/2);
+    const dy = (c.sy + h/2) - (y + h/2);
+    const dist = dx*dx + dy*dy;
+    if(dist < bestDist){
+      bestDist = dist;
+      chosen = c;
+    }
+  }
+
+  const patch = document.createElement('canvas');
+  patch.width = w;
+  patch.height = h;
+  const pctx = patch.getContext('2d');
+  pctx.drawImage(out, chosen.sx, chosen.sy, w, h, 0, 0, w, h);
+
+  // Feather patch edges
+  const mask = document.createElement('canvas');
+  mask.width = w;
+  mask.height = h;
+  const mctx = mask.getContext('2d');
+  const grad = mctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.25,w/2,h/2,Math.max(w,h)*0.72);
+  grad.addColorStop(0,'rgba(255,255,255,1)');
+  grad.addColorStop(0.72,'rgba(255,255,255,0.96)');
+  grad.addColorStop(1,'rgba(255,255,255,0)');
+  mctx.fillStyle = grad;
+  mctx.fillRect(0,0,w,h);
+
+  const feathered = document.createElement('canvas');
+  feathered.width = w;
+  feathered.height = h;
+  const fctx = feathered.getContext('2d');
+  fctx.drawImage(patch,0,0);
+  fctx.globalCompositeOperation = 'destination-in';
+  fctx.drawImage(mask,0,0);
+  fctx.globalCompositeOperation = 'source-over';
+
+  ctx.drawImage(feathered, x, y);
+
+  return out;
+}
+
+$('removeObjectBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  if(!objectRegion){ alert('Hãy chọn vật thể cần xóa trước.'); return; }
+  pushUndo();
+
+  const current = document.createElement('canvas');
+  current.width = editedCanvas.width;
+  current.height = editedCanvas.height;
+  current.getContext('2d').drawImage(editedCanvas,0,0);
+
+  const cleaned = removeObjectByPatch(current, objectRegion);
+  const dataURL = cleaned.toDataURL('image/png');
+
+  const im = new Image();
+  im.onload = () => {
+    img = im;
+    rotation = 0;
+    selectedRegion = null;
+    cropRegion = null;
+    objectRegion = null;
+    tiltObjectRegion = null;
+    regionMode = false;
+    cropMode = false;
+    objectMode = false;
+    tiltObjectMode = false;
+    bgRemovalEnabled = false;
+
+    resizeWidth = im.naturalWidth;
+    resizeHeight = im.naturalHeight;
+    aspectRatio = im.naturalWidth / im.naturalHeight;
+    $('resizeWidth').value = resizeWidth;
+    $('resizeHeight').value = resizeHeight;
+
+    $('selectionBox').style.display = 'none';
+    $('cropBox').style.display = 'none';
+    $('objectBox').style.display = 'none';
+
+    $('selectObjectBtn').classList.remove('active-tool');
+    $('selectObjectBtn').textContent = '🧽 Chọn vật thể cần xóa';
+
+    setValues(defaults);
+    updateRemoveBgButton();
+    updateSkinSmoothButton();
+    updateObjectInfo();
+    updateTiltObjectInfo();
+    updateCropInfo();
+    updateRegionInfo();
+    updateResizeInfo();
+    renderEdited();
+    showStatus('✓ Đã xóa vật thể');
+  };
+  im.src = dataURL;
+};
+
+editedCanvas.addEventListener('mousedown', e => {
+  if(!objectMode || !img) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  const rect = editedCanvas.getBoundingClientRect();
+  objectStart = {
+    x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+  };
+
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('objectBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + objectStart.x) + 'px';
+  box.style.top = (rect.top - stageRect.top + objectStart.y) + 'px';
+  box.style.width = '0px';
+  box.style.height = '0px';
+}, true);
+
+window.addEventListener('mousemove', e => {
+  if(!objectStart || !objectMode) return;
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(objectStart.x, x);
+  const top = Math.min(objectStart.y, y);
+  const w = Math.abs(x - objectStart.x);
+  const h = Math.abs(y - objectStart.y);
+
+  const box = $('objectBox');
+  box.style.left = (rect.left - stageRect.left + left) + 'px';
+  box.style.top = (rect.top - stageRect.top + top) + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+}, true);
+
+window.addEventListener('mouseup', e => {
+  if(!objectStart || !objectMode) return;
+
+  const rect = editedCanvas.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(objectStart.x, x);
+  const top = Math.min(objectStart.y, y);
+  const w = Math.abs(x - objectStart.x);
+  const h = Math.abs(y - objectStart.y);
+
+  objectStart = null;
+
+  if(w < 8 || h < 8){
+    $('objectBox').style.display = 'none';
+    return;
+  }
+
+  objectRegion = {
+    x: left / rect.width,
+    y: top / rect.height,
+    w: w / rect.width,
+    h: h / rect.height
+  };
+
+  objectMode = false;
+  $('selectObjectBtn').classList.remove('active-tool');
+  $('selectObjectBtn').textContent = '🧽 Chọn lại vật thể';
+  updateObjectInfo();
+  positionObjectBox();
+  showStatus('✓ Đã chọn vật thể, bấm “Xóa vật thể”');
+}, true);
+
+function updateCropInfo(){
+  if(cropRegion){
+    $('cropInfo').textContent = `Vùng cắt: ${Math.round(cropRegion.w*100)}% × ${Math.round(cropRegion.h*100)}% ảnh`;
+  }else{
+    $('cropInfo').textContent = 'Chưa chọn vùng cắt.';
+  }
+}
+
+function positionCropBox(){
+  if(!cropRegion || editedCanvas.hidden) return;
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('cropBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + cropRegion.x * rect.width) + 'px';
+  box.style.top = (rect.top - stageRect.top + cropRegion.y * rect.height) + 'px';
+  box.style.width = (cropRegion.w * rect.width) + 'px';
+  box.style.height = (cropRegion.h * rect.height) + 'px';
+}
+
+$('selectCropBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  cropMode = true;
+  regionMode = false;
+  dragStart = null;
+  $('selectRegionBtn').classList.remove('active-tool');
+  $('selectCropBtn').classList.add('active-tool');
+  $('selectCropBtn').textContent = '✓ Kéo chuột để chọn vùng cắt';
+  showStatus('Kéo chuột trên ảnh bên phải để chọn vùng cắt');
+};
+
+$('clearCropBtn').onclick = () => {
+  cropMode = false;
+  cropStart = null;
+  cropRegion = null;
+  $('cropBox').style.display = 'none';
+  $('selectCropBtn').classList.remove('active-tool');
+  $('selectCropBtn').textContent = '✂ Chọn vùng cắt';
+  updateCropInfo();
+  showStatus('✓ Đã bỏ vùng cắt');
+};
+
+$('applyCropBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  if(!cropRegion){ alert('Hãy chọn vùng cắt trước.'); return; }
+  pushUndo();
+
+  // Crop from the currently rendered edited image.
+  const source = document.createElement('canvas');
+  source.width = editedCanvas.width;
+  source.height = editedCanvas.height;
+  source.getContext('2d').drawImage(editedCanvas,0,0);
+
+  const sx = Math.max(0, Math.round(cropRegion.x * source.width));
+  const sy = Math.max(0, Math.round(cropRegion.y * source.height));
+  const sw = Math.max(1, Math.round(cropRegion.w * source.width));
+  const sh = Math.max(1, Math.round(cropRegion.h * source.height));
+
+  const cropped = document.createElement('canvas');
+  cropped.width = Math.min(sw, source.width - sx);
+  cropped.height = Math.min(sh, source.height - sy);
+  cropped.getContext('2d').drawImage(
+    source,
+    sx, sy, cropped.width, cropped.height,
+    0, 0, cropped.width, cropped.height
+  );
+
+  const dataURL = cropped.toDataURL('image/png');
+  const im = new Image();
+  im.onload = () => {
+    img = im;
+    rotation = 0;
+    selectedRegion = null;
+    cropRegion = null;
+    cropMode = false;
+    tiltObjectRegion = null;
+    tiltObjectMode = false;
+    regionMode = false;
+    bgRemovalEnabled = false;
+
+    resizeWidth = im.naturalWidth;
+    resizeHeight = im.naturalHeight;
+    aspectRatio = im.naturalWidth / im.naturalHeight;
+    $('resizeWidth').value = resizeWidth;
+    $('resizeHeight').value = resizeHeight;
+
+    $('cropBox').style.display = 'none';
+    $('tiltObjectBox').style.display = 'none';
+    $('selectionBox').style.display = 'none';
+    $('selectCropBtn').classList.remove('active-tool');
+    $('selectCropBtn').textContent = '✂ Chọn vùng cắt';
+    $('selectRegionBtn').classList.remove('active-tool');
+    $('selectRegionBtn').textContent = '▭ Chọn vùng trên ảnh';
+
+    setValues(defaults);
+    updateRemoveBgButton();
+    updateSkinSmoothButton();
+    updateCropInfo();
+    updateRegionInfo();
+    updateResizeInfo();
+    renderEdited();
+    showStatus(`✓ Đã cắt ảnh: ${im.naturalWidth} × ${im.naturalHeight} px`);
+  };
+  im.src = dataURL;
+};
+
+editedCanvas.addEventListener('mousedown', e => {
+  if(!cropMode || !img) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  const rect = editedCanvas.getBoundingClientRect();
+  cropStart = {
+    x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+  };
+
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const box = $('cropBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - stageRect.left + cropStart.x) + 'px';
+  box.style.top = (rect.top - stageRect.top + cropStart.y) + 'px';
+  box.style.width = '0px';
+  box.style.height = '0px';
+}, true);
+
+window.addEventListener('mousemove', e => {
+  if(!cropStart || !cropMode) return;
+
+  const rect = editedCanvas.getBoundingClientRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(cropStart.x, x);
+  const top = Math.min(cropStart.y, y);
+  const w = Math.abs(x - cropStart.x);
+  const h = Math.abs(y - cropStart.y);
+
+  const box = $('cropBox');
+  box.style.left = (rect.left - stageRect.left + left) + 'px';
+  box.style.top = (rect.top - stageRect.top + top) + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+}, true);
+
+window.addEventListener('mouseup', e => {
+  if(!cropStart || !cropMode) return;
+
+  const rect = editedCanvas.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(cropStart.x, x);
+  const top = Math.min(cropStart.y, y);
+  const w = Math.abs(x - cropStart.x);
+  const h = Math.abs(y - cropStart.y);
+
+  cropStart = null;
+  if(w < 8 || h < 8){
+    $('cropBox').style.display = 'none';
+    return;
+  }
+
+  cropRegion = {
+    x: left / rect.width,
+    y: top / rect.height,
+    w: w / rect.width,
+    h: h / rect.height
+  };
+
+  cropMode = false;
+  $('selectCropBtn').classList.remove('active-tool');
+  $('selectCropBtn').textContent = '✂ Chọn lại vùng cắt';
+  updateCropInfo();
+  positionCropBox();
+  showStatus('✓ Đã chọn vùng cắt, bấm “Cắt ảnh”');
+}, true);
+
+function updateRegionInfo(){
+  if(selectedRegion){
+    $('regionInfo').textContent = `Đang chỉnh vùng đã chọn: ${Math.round(selectedRegion.w*100)}% × ${Math.round(selectedRegion.h*100)}% ảnh`;
+  }else{
+    $('regionInfo').textContent = 'Hiện đang chỉnh toàn bộ ảnh.';
+  }
+}
+
+function getCanvasDisplayRect(){
+  return editedCanvas.getBoundingClientRect();
+}
+
+$('selectRegionBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  regionMode = true;
+  $('selectRegionBtn').classList.add('active-tool');
+  $('selectRegionBtn').textContent = '✓ Kéo chuột để chọn vùng';
+  showStatus('Kéo chuột trên ảnh bên phải để chọn vùng');
+};
+
+$('clearRegionBtn').onclick = () => {
+  selectedRegion = null;
+  regionMode = false;
+  cropRegion = null;
+  cropMode = false;
+  objectRegion = null;
+  objectMode = false;
+  tiltObjectRegion = null;
+  tiltObjectMode = false;
+  $('tiltObjectBox').style.display = 'none';
+  $('selectTiltObjectBtn').classList.remove('active-tool');
+  $('selectTiltObjectBtn').textContent = '🔲 Chọn vật thể để nghiêng';
+  updateTiltObjectInfo();
+  $('objectBox').style.display = 'none';
+  $('selectObjectBtn').classList.remove('active-tool');
+  $('selectObjectBtn').textContent = '🧽 Chọn vật thể cần xóa';
+  updateObjectInfo();
+  $('cropBox').style.display = 'none';
+  $('selectCropBtn').classList.remove('active-tool');
+  $('selectCropBtn').textContent = '✂ Chọn vùng cắt';
+  updateCropInfo();
+  dragStart = null;
+  $('selectionBox').style.display = 'none';
+  $('selectRegionBtn').classList.remove('active-tool');
+  $('selectRegionBtn').textContent = '▭ Chọn vùng trên ảnh';
+  updateRegionInfo();
+  renderEdited();
+  showStatus('✓ Đã bỏ chọn vùng');
+};
+
+editedCanvas.addEventListener('mousedown', e => {
+  if(!regionMode || !img) return;
+  const rect = getCanvasDisplayRect();
+  dragStart = {
+    x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, e.clientY - rect.top))
+  };
+  const box = $('selectionBox');
+  box.style.display = 'block';
+  box.style.left = (rect.left - $('editedStage').getBoundingClientRect().left + dragStart.x) + 'px';
+  box.style.top = (rect.top - $('editedStage').getBoundingClientRect().top + dragStart.y) + 'px';
+  box.style.width = '0px';
+  box.style.height = '0px';
+});
+
+window.addEventListener('mousemove', e => {
+  if(!dragStart || !regionMode) return;
+  const rect = getCanvasDisplayRect();
+  const stageRect = $('editedStage').getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(dragStart.x, x);
+  const top = Math.min(dragStart.y, y);
+  const w = Math.abs(x - dragStart.x);
+  const h = Math.abs(y - dragStart.y);
+
+  const box = $('selectionBox');
+  box.style.left = (rect.left - stageRect.left + left) + 'px';
+  box.style.top = (rect.top - stageRect.top + top) + 'px';
+  box.style.width = w + 'px';
+  box.style.height = h + 'px';
+});
+
+window.addEventListener('mouseup', e => {
+  if(!dragStart || !regionMode) return;
+  const rect = getCanvasDisplayRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  const left = Math.min(dragStart.x, x);
+  const top = Math.min(dragStart.y, y);
+  const w = Math.abs(x - dragStart.x);
+  const h = Math.abs(y - dragStart.y);
+
+  dragStart = null;
+  if(w < 5 || h < 5){
+    $('selectionBox').style.display = 'none';
+    return;
+  }
+
+  selectedRegion = {
+    x: left / rect.width,
+    y: top / rect.height,
+    w: w / rect.width,
+    h: h / rect.height
+  };
+
+  regionMode = false;
+  $('selectRegionBtn').classList.remove('active-tool');
+  $('selectRegionBtn').textContent = '▭ Chọn lại vùng';
+  updateRegionInfo();
+  renderEdited();
+  showStatus('✓ Đã chọn vùng chỉnh sửa');
+});
+
+$('resizeWidth').addEventListener('input', () => {
+  if(!img) return;
+  const w = Math.max(1, Number($('resizeWidth').value) || 1);
+  if($('lockAspect').checked){
+    const h = Math.max(1, Math.round(w / aspectRatio));
+    $('resizeHeight').value = h;
+  }
+});
+
+$('resizeHeight').addEventListener('input', () => {
+  if(!img) return;
+  const h = Math.max(1, Number($('resizeHeight').value) || 1);
+  if($('lockAspect').checked){
+    const w = Math.max(1, Math.round(h * aspectRatio));
+    $('resizeWidth').value = w;
+  }
+});
+
+$('applyResize').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  pushUndo();
+
+  let w = Math.max(1, Math.round(Number($('resizeWidth').value) || img.naturalWidth));
+  let h = Math.max(1, Math.round(Number($('resizeHeight').value) || img.naturalHeight));
+
+  if($('lockAspect').checked){
+    // Ưu tiên chiều rộng nếu cả hai đã thay đổi không đúng tỷ lệ.
+    h = Math.max(1, Math.round(w / aspectRatio));
+    $('resizeHeight').value = h;
+  }
+
+  resizeWidth = w;
+  resizeHeight = h;
+  updateResizeInfo();
+  renderEdited();
+  showStatus(`✓ Đã đổi kích thước thành ${w} × ${h} px`);
+};
+
+
+
+function setTiltAngle(value, saveHistory=false){
+  if(!img) return;
+  let v = Number(value);
+  if(!Number.isFinite(v)) v = 0;
+  v = Math.max(-45, Math.min(45, Math.round(v)));
+
+  if(saveHistory) pushUndo();
+
+  $('tiltAngle').value = v;
+  $('tiltNumber').value = v;
+  $('tiltAngleVal').textContent = v + '°';
+
+  // Cập nhật ngay, không chờ bộ hẹn giờ của các thanh khác
+  renderEdited();
+}
+
+$('tiltAngle').addEventListener('input', e => {
+  if(!img) return;
+  const v = Number(e.target.value);
+  $('tiltNumber').value = v;
+  $('tiltAngleVal').textContent = v + '°';
+  renderEdited();
+});
+
+$('tiltAngle').addEventListener('change', () => {
+  if(img) showStatus(`✓ Góc nghiêng ảnh: ${$('tiltAngle').value}°`);
+});
+
+$('tiltNumber').addEventListener('change', e => {
+  setTiltAngle(e.target.value, true);
+  showStatus(`✓ Góc nghiêng ảnh: ${$('tiltAngle').value}°`);
+});
+
+$('tiltMinusBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setTiltAngle(Number($('tiltAngle').value) - 1, true);
+};
+
+$('tiltPlusBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setTiltAngle(Number($('tiltAngle').value) + 1, true);
+};
+
+$('tiltZeroBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  setTiltAngle(0, true);
+  showStatus('✓ Đã đưa góc nghiêng về 0°');
+};
+
+$('skinSmoothBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  pushUndo();
+  skinSmoothEnabled = !skinSmoothEnabled;
+  updateSkinSmoothButton();
+  renderEdited();
+  showStatus(skinSmoothEnabled ? '✓ Đã bật làm mịn da' : '✓ Đã tắt làm mịn da');
+};
+
+$('autoBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  pushUndo();
+  const lum = averageLuminance();
+  let b=104, c=116, s=118, w=4, sh=1.2;
+  if(lum < 85){ b=132; c=118; s=116; w=6; sh=1.0; }
+  else if(lum < 125){ b=118; c=116; s=118; w=5; sh=1.2; }
+  else if(lum > 205){ b=90; c=114; s=110; w=2; sh=1.0; }
+  setValues({...defaults, brightness:b, contrast:c, saturate:s, warmth:w, sharpness:sh});
+  renderEdited();
+  showStatus('✓ Đã tự động tối ưu ảnh');
+};
+
+$('removeBgBtn').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  pushUndo();
+  bgRemovalEnabled = !bgRemovalEnabled;
+  updateRemoveBgButton();
+  renderEdited();
+  showStatus(bgRemovalEnabled ? '✓ Đã bật xóa nền' : '✓ Đã tắt xóa nền');
+};
+
+$('resetBtn').onclick = undo;
+
+$('rotateL').onclick = () => {
+  if(!img) return;
+  pushUndo();
+  rotation = (rotation - 90) % 360;
+  renderEdited();
+};
+
+$('rotateR').onclick = () => {
+  if(!img) return;
+  pushUndo();
+  rotation = (rotation + 90) % 360;
+  renderEdited();
+};
+
+$('applyPreset').onclick = () => {
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+  pushUndo();
+  renderEdited();
+  showStatus('✓ Đã áp dụng chỉnh sửa');
+};
+
+function download(type){
+  if(!img){ alert('Vui lòng chọn ảnh trước.'); return; }
+
+  const [rw,rh] = getRequestedSize();
+  const totalDeg = rotation + Number($('tiltAngle').value || 0);
+  const rad = totalDeg * Math.PI / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+
+  const savedResizeW = resizeWidth;
+  const savedResizeH = resizeHeight;
+
+  resizeWidth = rw;
+  resizeHeight = rh;
+
+  const sourceCanvas = buildEditedSourceCanvas();
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, Math.ceil(rw * cos + rh * sin));
+  out.height = Math.max(1, Math.ceil(rw * sin + rh * cos));
+  const outCtx = out.getContext('2d');
+
+  outCtx.clearRect(0,0,out.width,out.height);
+
+  if(type === 'image/jpeg'){
+    outCtx.fillStyle = '#ffffff';
+    outCtx.fillRect(0,0,out.width,out.height);
+  }
+
+  outCtx.save();
+  outCtx.translate(out.width/2, out.height/2);
+  outCtx.rotate(rad);
+  outCtx.drawImage(sourceCanvas, -rw/2, -rh/2, rw, rh);
+  outCtx.restore();
+
+  resizeWidth = savedResizeW;
+  resizeHeight = savedResizeH;
+
+  const link = document.createElement('a');
+  link.download = type === 'image/png' ? `anh-${out.width}x${out.height}.png` : `anh-${out.width}x${out.height}.jpg`;
+  link.href = out.toDataURL(type, type === 'image/jpeg' ? 0.94 : 1);
+  link.click();
+}
+$('downloadBtn').onclick = () => download('image/jpeg');
+$('downloadPngBtn').onclick = () => download('image/png');
+
+updateLabels();
+updateRemoveBgButton();
+updateRegionInfo();
+</script>
+</body>
+</html>
